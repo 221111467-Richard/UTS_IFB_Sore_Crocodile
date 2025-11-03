@@ -44,3 +44,21 @@ def clean_text(text):
 
 
 df['cleaned'] = df['Customer Review'].astype(str).apply(clean_text)
+
+
+vectorizer = TfidfVectorizer(max_features=5000, ngram_range=(1,2))
+
+X = vectorizer.fit_transform(df['cleaned'])
+y = df['Sentiment']
+
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+
+joblib.dump(vectorizer, "model/vectorizer.pkl")
+
+joblib.dump((X_train, y_train, X_test, y_test), "model/data_split.pkl")
+
+print("✅ Preprocessing selesai. Vectorizer & data split disimpan di folder model/")
