@@ -1,0 +1,101 @@
+{% extends "layout.html" %}
+{% block title %}Analisis Manual{% endblock %}
+{% block content %}
+  <style>
+    .market-select {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 1000;
+      font-size: 14px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #fff;
+    }
+
+    .content-wrapper {
+      position: relative;
+      padding-top: 56px;
+    }
+
+    .form-section textarea {
+      width: 100%;
+      max-width: 720px;
+    }
+
+    .form-section input[type="submit"] {
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: 1px solid #2b6cb0;
+      background: #2b6cb0;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    #result-box {
+      margin-top: 20px;
+      display: none;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background-color: #f8f8f8;
+    }
+  </style>
+
+  <select
+    class="market-select"
+    aria-label="Pilih marketplace"
+    onchange="if(this.value) window.open(this.value, '_blank');"
+  >
+    <option value="">Yuk cari komentar untuk tes model kami...</option>
+    <option value="https://www.tokopedia.com">Tokopedia</option>
+    <option value="https://www.shopee.co.id">Shopee</option>
+    <option value="https://www.lazada.co.id">Lazada</option>
+    <option value="https://www.blibli.com">Blibli</option>
+  </select>
+
+  <div class="content-wrapper">
+    <h2>Analisis Sentimen Review Produk</h2>
+    <p>Ketikkan ulasan produk dalam Bahasa Indonesia, lalu tekan "Analisis".</p>
+
+    <div class="form-section">
+      <form id="sentiment-form">
+        <textarea name="review" rows="4" placeholder="Masukkan review di sini..."></textarea><br /><br />
+        <input type="submit" value="Analisis" />
+      </form>
+    </div>
+
+    <div id="result-box">
+      <h3>Hasil Analisis:</h3>
+      <p><b>Review:</b> <span id="review-text"></span></p>
+      <p><b>Prediksi Sentimen:</b>
+        <span id="sentiment-text" style="font-weight: bold;"></span>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("sentiment-form");
+    const resultBox = document.getElementById("result-box");
+    const reviewText = document.getElementById("review-text");
+    const sentimentText = document.getElementById("sentiment-text");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+
+      const response = await fetch("/predict", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+      reviewText.textContent = data.review;
+      sentimentText.textContent = data.prediction;
+      sentimentText.style.color = data.prediction === "Positive" ? "green" : "red";
+
+      resultBox.style.display = "block";
+    });
+  </script>
+{% endblock %}
