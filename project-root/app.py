@@ -14,7 +14,8 @@ from wordcloud import WordCloud
 
 app = Flask(__name__)
 
-
+sentiment_model = joblib.load("model/sentiment_svm.pkl")
+vectorizer = joblib.load("model/vectorizer.pkl")
 
 if __name__ == "__main__":
     app.run(debug=True)
