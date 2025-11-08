@@ -171,5 +171,13 @@ def analytics():
                            charts=charts)
 
 
+@app.route('/wordcloud')
+def wordcloud_page():
+    global wordcloud_img
+    if wordcloud_img is None:
+        return render_template("wordcloud.html", error="Belum ada WordCloud yang dihasilkan. Jalankan analisis CSV terlebih dahulu.")
+    return render_template("wordcloud.html", wordcloud_img=wordcloud_img)
+
+
 if __name__ == "__main__":
     app.run(debug=True)
