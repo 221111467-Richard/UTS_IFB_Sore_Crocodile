@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% block title %}Analisis Sentimen CSV{% endblock %}
+{% block content %}
+  {% if error %}
+    <h3>{{ error }}</h3>
+  {% else %}
+    <h2>Statistik Sentimen</h2>
+    <p>Total review: <b>{{ total }}</b></p>
+    <p>Positif: <b>{{ pos_count }}</b> ({{ pos_pct }}%)</p>
+    <p>Negatif: <b>{{ neg_count }}</b> ({{ neg_pct }}%)</p>
+    <p><b>Nama file:</b> {{ file_name }}</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:40px; margin-top:30px;">
+      {% for key, img in charts.items() %}
+      <div style="text-align:center;">
+        <h3>{{ key|capitalize }} Chart</h3>
+        <img src="data:image/png;base64,{{ img }}" width="380" />
+      </div>
+      {% endfor %}
+    </div>
+
+  {% endif %}
+{% endblock %}
