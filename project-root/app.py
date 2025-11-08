@@ -48,5 +48,13 @@ wordcloud_img = None
 def home():
     return render_template("index.html")
 
+
+@app.route('/predict', methods=["POST"])
+def predict():
+    text = request.form['review']
+    X = vectorizer.transform([text])
+    sentiment = sentiment_model.predict(X)[0]
+    return {"review": text, "prediction": sentiment}
+
 if __name__ == "__main__":
     app.run(debug=True)
