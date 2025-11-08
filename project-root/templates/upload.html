@@ -1,0 +1,86 @@
+{% extends "layout.html" %}
+{% block title %}Analisis CSV{% endblock %}
+{% block content %}
+  <style>
+    .sample-download {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 1000;
+    }
+
+    .sample-download a {
+      text-decoration: none;
+      background: #2b6cb0;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+
+    .sample-download a:hover {
+      background:#2b6cb0;
+    }
+
+    .form-section {
+      margin-top: 60px;
+    }
+
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .result-table th, .result-table td {
+      border: 1px solid #ccc;
+      padding: 8px;
+    }
+
+    .positive {
+      color: green;
+      font-weight: bold;
+    }
+
+    .negative {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+
+
+  <h2>Analisis Sentimen Batch (CSV)</h2>
+  <p>Upload file CSV yang berisi kolom <b>berisi teks review produk</b> untuk dianalisis secara otomatis.</p>
+
+  <div class="form-section">
+    <form method="POST" action="/upload" enctype="multipart/form-data">
+      <input type="file" name="file" accept=".csv" required />
+      <br /><br />
+      <input type="submit" value="Upload & Analisis" />
+    </form>
+  </div>
+
+  {% if results %}
+  <div class="form-section" style="margin-top:20px;">
+    <h3>Hasil Analisis:</h3>
+    <table class="result-table">
+      <thead>
+        <tr>
+          <th>Review</th>
+          <th>Prediksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in results %}
+        <tr>
+          <td>{{ r.review }}</td>
+          <td class="{{ 'positive' if r.pred == 'Positive' else 'negative' }}">
+            {{ r.pred }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+{% endblock %}
