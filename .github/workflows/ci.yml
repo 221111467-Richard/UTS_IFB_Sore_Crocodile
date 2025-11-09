@@ -31,10 +31,12 @@ jobs:
 
 
       - name: Build Docker image
+        working-directory: project-root
         run: docker build -t flask-app:latest .
 
 
       - name: Run container
+        working-directory: project-root
         run: docker run -d -p 5000:5000 --name flask-container flask-app:latest
 
 
