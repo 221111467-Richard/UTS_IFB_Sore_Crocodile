@@ -180,11 +180,26 @@ def analytics():
 
 @app.route('/wordcloud')
 def wordcloud_page():
-    global wordcloud_img
-    if wordcloud_img is None:
-        return render_template("wordcloud.html", error="Belum ada WordCloud yang dihasilkan. Jalankan analisis CSV terlebih dahulu.")
-    return render_template("wordcloud.html", wordcloud_img=wordcloud_img)
+    analysis_id = session.get('analysis_id')
 
+    if not analysis_id or analysis_id not in analysis_cache:
+        return render_template(
+            "wordcloud.html",
+            error="Belum ada WordCloud."
+        )
+
+    wordcloud_img = analysis_cache[analysis_id].get("wordcloud")
+
+    if not wordcloud_img:
+        return render_template(
+            "wordcloud.html",
+            error="WordCloud belum dibuat."
+        )
+
+    return render_template(
+        "wordcloud.html",
+        wordcloud_img=wordcloud_img
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)
