@@ -14,6 +14,9 @@ from wordcloud import WordCloud
 import os
 import uuid
 
+import redis
+import json
+
 
 app = Flask(__name__)
 app.secret_key = "CHANGE_THIS_SECRET_KEY"
@@ -27,7 +30,14 @@ vectorizer = joblib.load(
     os.path.join(BASE_DIR, "model", "vectorizer.pkl")
 )
 
-analysis_cache = {}
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+
+redis_client = redis.Redis(
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    decode_responses=True
+)
 
 stop_factory = StopWordRemoverFactory()
 stopwords = set(stop_factory.get_stop_words())
@@ -98,10 +108,14 @@ def upload():
 
         analysis_id = str(uuid.uuid4())
 
-        analysis_cache[analysis_id] = {
-            "df": df,
-            "cleaned_text": " ".join(df['cleaned'].tolist())
-        }
+        redis_client.setex(
+    f"analysis:{analysis_id}",
+    3600,  # 1 jam
+    json.dumps({
+        "df": df.to_json(),
+        "cleaned_text": " ".join(df['cleaned'].tolist())
+    })
+)
 
         session['analysis_id'] = analysis_id
 
@@ -117,15 +131,17 @@ def upload():
 @app.route('/analytics')
 def analytics():
     analysis_id = session.get('analysis_id')
+    raw = redis_client.get(f"analysis:{analysis_id}")
 
-    if not analysis_id or analysis_id not in analysis_cache:
+    if not analysis_id or not raw:
         return render_template(
             "analytics.html",
             error="Belum ada data yang dianalisis."
         )
 
-    df = analysis_cache[analysis_id]["df"]
-    text_joined = analysis_cache[analysis_id]["cleaned_text"]
+    data = json.loads(raw)
+    df = pd.read_json(data["df"])
+    text_joined = data["cleaned_text"]
 
     pos_count = (df['Prediction'] == 'Positive').sum()
     neg_count = (df['Prediction'] == 'Negative').sum()
@@ -143,10 +159,13 @@ def analytics():
     wc.to_image().save(buf, format='png')
     buf.seek(0)
 
-    analysis_cache[analysis_id]["wordcloud"] = base64.b64encode(
-        buf.getvalue()
-    ).decode('utf-8')
+    data["wordcloud"] = base64.b64encode(buf.getvalue()).decode("utf-8")
 
+    redis_client.setex(
+    f"analysis:{analysis_id}",
+    3600,
+    json.dumps(data)
+)
     # PIE CHART
     plt.figure(figsize=(4, 4))
     plt.pie(
@@ -181,14 +200,16 @@ def analytics():
 @app.route('/wordcloud')
 def wordcloud_page():
     analysis_id = session.get('analysis_id')
+    raw = redis_client.get(f"analysis:{analysis_id}")
 
-    if not analysis_id or analysis_id not in analysis_cache:
+    if not analysis_id or not raw:
         return render_template(
             "wordcloud.html",
             error="Belum ada WordCloud."
         )
 
-    wordcloud_img = analysis_cache[analysis_id].get("wordcloud")
+    data = json.loads(raw)
+    wordcloud_img = data.get("wordcloud")
 
     if not wordcloud_img:
         return render_template(
