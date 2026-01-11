@@ -11,11 +11,23 @@ from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 
 from wordcloud import WordCloud
 
+import os
+import uuid
+
 
 app = Flask(__name__)
+app.secret_key = "CHANGE_THIS_SECRET_KEY"
 
-sentiment_model = joblib.load("model/sentiment_svm.pkl")
-vectorizer = joblib.load("model/vectorizer.pkl")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+sentiment_model = joblib.load(
+    os.path.join(BASE_DIR, "model", "sentiment_svm.pkl")
+)
+vectorizer = joblib.load(
+    os.path.join(BASE_DIR, "model", "vectorizer.pkl")
+)
+
+analysis_cache = {}
 
 stop_factory = StopWordRemoverFactory()
 stopwords = set(stop_factory.get_stop_words())
