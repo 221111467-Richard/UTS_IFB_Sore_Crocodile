@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request,session
 import joblib
 import re
 import io, base64
@@ -70,35 +70,46 @@ def predict():
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
-    global last_df
     if request.method == 'POST':
         file = request.files['file']
-        df = pd.read_csv(file, quotechar='"', sep=',', on_bad_lines='skip')
+        df = pd.read_csv(file, on_bad_lines='skip')
 
         base_cols = [
-            'customer review', 'review', 'reviews', 'comment', 'comments',
-            'text', 'content', 'feedback', 'message', 'messages', 'opinion',
-            'body', 'ulasan', 'deskripsi', 'isi', 'caption', 'post', 'tweet',
-            'status', 'description', 'response', 'remark', 'testimonial',
-            'statement', 'komentar', 'tanggapan', 'pendapat', 'evaluasi',
-            'keterangan', 'pesan', 'uraian', 'narasi', 'isi review',
-            'isi komentar', 'sentence', 'text tweet'
+            'review', 'comment', 'text', 'ulasan', 'komentar',
+            'content', 'message', 'feedback', 'tweet'
         ]
-        possible_cols = [col for c in base_cols for col in [c, c.capitalize(), c.upper()]]
 
         review_col = next(
-            (col for col in df.columns if col.strip().lower() in [p.lower() for p in possible_cols]),
+            (c for c in df.columns if c.lower() in base_cols),
             None
         )
+
         if not review_col:
-            return render_template("upload.html", error=f"Kolom teks tidak ditemukan. Kolom: {list(df.columns)}")
+            return render_template(
+                "upload.html",
+                error=f"Kolom teks tidak ditemukan. Kolom: {list(df.columns)}"
+            )
 
         df = df[df[review_col].astype(str).str.len() > 5].head(200)
         df['cleaned'] = df[review_col].astype(str).apply(clean_text)
-        df['Prediction'] = sentiment_model.predict(vectorizer.transform(df['cleaned']))
+        df['Prediction'] = sentiment_model.predict(
+            vectorizer.transform(df['cleaned'])
+        )
 
-        last_df = df  
-        results = [{'review': r, 'pred': p} for r, p in zip(df[review_col], df['Prediction'])]
+        analysis_id = str(uuid.uuid4())
+
+        analysis_cache[analysis_id] = {
+            "df": df,
+            "cleaned_text": " ".join(df['cleaned'].tolist())
+        }
+
+        session['analysis_id'] = analysis_id
+
+        results = [
+            {'review': r, 'pred': p}
+            for r, p in zip(df[review_col], df['Prediction'])
+        ]
+
         return render_template("upload.html", results=results)
 
     return render_template("upload.html")
