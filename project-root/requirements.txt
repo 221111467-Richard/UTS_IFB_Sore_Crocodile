@@ -7,3 +7,4 @@ matplotlib==3.8.2
 seaborn==0.13.2
 wordcloud==1.9.4
 gunicorn
+redis
