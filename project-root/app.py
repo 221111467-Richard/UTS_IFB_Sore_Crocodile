@@ -114,84 +114,68 @@ def upload():
 
     return render_template("upload.html")
 
-
 @app.route('/analytics')
 def analytics():
-    global last_df
-    if last_df is None:
-        return render_template("analytics.html", error="Belum ada data yang dianalisis.")
+    analysis_id = session.get('analysis_id')
 
-    df = last_df.copy()
+    if not analysis_id or analysis_id not in analysis_cache:
+        return render_template(
+            "analytics.html",
+            error="Belum ada data yang dianalisis."
+        )
 
-    file_name = getattr(df, "file_name", "Dataset CSV")
+    df = analysis_cache[analysis_id]["df"]
+    text_joined = analysis_cache[analysis_id]["cleaned_text"]
 
     pos_count = (df['Prediction'] == 'Positive').sum()
     neg_count = (df['Prediction'] == 'Negative').sum()
     total = len(df)
-    pos_pct = round((pos_count / total) * 100, 2)
-    neg_pct = round((neg_count / total) * 100, 2)
 
-    charts = {}  
+    charts = {}
 
-    global wordcloud_img
-    text_joined = " ".join(df['cleaned'].tolist())
-    wc = WordCloud(width=800, height=400, background_color='white',
-                   colormap='viridis', max_words=200).generate(text_joined)
+    # WORDCLOUD
+    wc = WordCloud(
+        width=800, height=400,
+        background_color='white'
+    ).generate(text_joined)
+
     buf = io.BytesIO()
     wc.to_image().save(buf, format='png')
     buf.seek(0)
-    wordcloud_img = base64.b64encode(buf.getvalue()).decode('utf-8')
 
+    analysis_cache[analysis_id]["wordcloud"] = base64.b64encode(
+        buf.getvalue()
+    ).decode('utf-8')
 
+    # PIE CHART
     plt.figure(figsize=(4, 4))
-    plt.pie([pos_count, neg_count], labels=['Positive', 'Negative'],
-            autopct='%1.1f%%', colors=['green', 'red'])
-    plt.title(f'Distribusi Sentimen\n({file_name})')
+    plt.pie(
+        [pos_count, neg_count],
+        labels=['Positive', 'Negative'],
+        autopct='%1.1f%%'
+    )
     buf = io.BytesIO()
-    plt.savefig(buf, format='png'); buf.seek(0)
+    plt.savefig(buf, format='png')
+    buf.seek(0)
     charts['pie'] = base64.b64encode(buf.getvalue()).decode('utf-8')
     plt.close()
 
-
+    # BAR CHART
     plt.figure(figsize=(5, 4))
-    sns.countplot(x='Prediction', data=df, palette={'Positive': 'green', 'Negative': 'red'})
-    plt.title(f'Jumlah Review per Sentimen\n({file_name})')
-    plt.xlabel('Sentimen'); plt.ylabel('Jumlah')
+    sns.countplot(x='Prediction', data=df)
     buf = io.BytesIO()
-    plt.savefig(buf, format='png'); buf.seek(0)
+    plt.savefig(buf, format='png')
+    buf.seek(0)
     charts['bar'] = base64.b64encode(buf.getvalue()).decode('utf-8')
     plt.close()
 
-    plt.figure(figsize=(6, 3))
-    df['SentimenScore'] = df['Prediction'].apply(lambda x: 1 if x == 'Positive' else -1)
-    plt.plot(df['SentimenScore'].cumsum(), color='purple')
-    plt.title(f'Trend Kumulatif Sentimen\n({file_name})')
-    plt.xlabel('Indeks Review'); plt.ylabel('Skor Kumulatif')
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png'); buf.seek(0)
-    charts['line'] = base64.b64encode(buf.getvalue()).decode('utf-8')
-    plt.close()
-
-
-    plt.figure(figsize=(5, 3))
-    sns.histplot(df['SentimenScore'], bins=3, kde=False, color='skyblue')
-    plt.title(f'Histogram Sentimen\n({file_name})')
-    plt.xlabel('Nilai Sentimen'); plt.ylabel('Frekuensi')
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png'); buf.seek(0)
-    charts['hist'] = base64.b64encode(buf.getvalue()).decode('utf-8')
-    plt.close()
-
-
-
-    return render_template("analytics.html",
-                           total=total,
-                           pos_count=pos_count,
-                           neg_count=neg_count,
-                           pos_pct=pos_pct,
-                           neg_pct=neg_pct,
-                           file_name=file_name,
-                           charts=charts)
+    return render_template(
+        "analytics.html",
+        total=total,
+        pos_count=pos_count,
+        neg_count=neg_count,
+        charts=charts
+    )
 
 
 @app.route('/wordcloud')
