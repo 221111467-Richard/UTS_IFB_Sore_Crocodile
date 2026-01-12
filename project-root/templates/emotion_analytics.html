@@ -30,3 +30,51 @@
     background: #1a4d8f;
   }
 </style>
+
+<div class="container mt-5">
+  <h2 class="text-center mb-4">Analisis Persentase Emosi</h2>
+  <form action="/emotion_analytics" method="post" enctype="multipart/form-data">
+    <input type="file" name="file" class="form-control" accept=".csv" required>
+    <input type="submit" value="Analisis">
+  </form>
+
+  {% if emotions %}
+  <hr>
+  <canvas id="emotionChart" height="100"></canvas>
+  <button id="saveChart" >💾 Save as Image</button>
+  {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% if emotions %}
+const ctx = document.getElementById('emotionChart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'pie',
+  data: {
+    labels: {{ emotions.keys() | list | safe }},
+    datasets: [{
+      data: {{ emotions.values() | list | safe }},
+      backgroundColor: ['#ef5350','#42a5f5','#ffca28','#66bb6a','#ab47bc'],
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom' },
+      title: { display: true, text: 'Distribusi Emosi (%)' }
+    },
+    animation: { animateRotate: true, animateScale: true }
+  }
+});
+
+document.getElementById('saveChart').addEventListener('click', () => {
+  const link = document.createElement('a');
+  link.download = 'emotion_chart.png';
+  link.href = chart.toBase64Image();
+  link.click();
+});
+{% endif %}
+</script>
+{% endblock %}
