@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+{% block title %}Analisis CSV{% endblock %}
+{% block content %}
+<style>
+  .form-section input[type="submit"] {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #2b6cb0;
+    background: #2b6cb0;
+    color: #fff;
+    cursor: pointer;
+    transition: 0.2s;
+    margin-top:20px;
+  }
+
+  .form-section input[type="submit"]:hover {
+    background: #1a4d8f;
+  }
+
+  .form-section {
+    margin-top: 60px;
+  }
+
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+
+  .result-table th, .result-table td {
+    border: 1px solid #ccc;
+    padding: 8px;
+  }
+
+  .positive {
+    color: green;
+    font-weight: bold;
+  }
+
+  .negative {
+    color: red;
+    font-weight: bold;
+  }
+
+  .neutral {
+    color: #999;
+    font-weight: bold;
+  }
+</style>
