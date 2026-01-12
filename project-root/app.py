@@ -278,5 +278,45 @@ def analyze_csv():
 
     return render_template('emotion_csv.html', results=results)
 
+@app.route('/emotion_analytics', methods=['GET', 'POST'])
+def emotion_analytics():
+    emotions = None
+    if request.method == 'POST':
+        file = request.files['file']
+        df = pd.read_csv(file, quotechar='"', sep=',', on_bad_lines='skip')
+
+        base_cols = [
+            'customer review', 'review', 'reviews', 'comment', 'comments',
+            'text', 'content', 'feedback', 'message', 'messages', 'opinion',
+            'body', 'ulasan', 'deskripsi', 'isi', 'caption', 'post', 'tweet',
+            'status', 'description', 'response', 'remark', 'testimonial',
+            'statement', 'komentar', 'tanggapan', 'pendapat', 'evaluasi',
+            'keterangan', 'pesan', 'uraian', 'narasi', 'isi review',
+            'isi komentar', 'sentence', 'text tweet'
+        ]
+        possible_cols = [col for c in base_cols for col in [c, c.capitalize(), c.upper()]]
+
+        review_col = next(
+            (col for col in df.columns if col.strip().lower() in [p.lower() for p in possible_cols]),
+            None
+        )
+
+        if not review_col:
+            return render_template("emotion_analytics.html", error=f"Kolom teks tidak ditemukan. Kolom: {list(df.columns)}")
+
+
+        df = df[df[review_col].astype(str).str.len() > 5].head(200)
+        df['cleaned'] = df[review_col].astype(str).apply(clean_text)
+
+
+        vec = vectorizer.transform(df['cleaned'])
+        predicted_emotions = emotion_model.predict(vec)
+
+ 
+        counts = pd.Series(predicted_emotions).value_counts(normalize=True) * 100
+        emotions = counts.to_dict()
+
+    return render_template('emotion_analytics.html', emotions=emotions)
+
 if __name__ == "__main__":
     app.run(debug=True)
