@@ -222,5 +222,18 @@ def wordcloud_page():
         wordcloud_img=wordcloud_img
     )
 
+@app.route('/realtime')
+def realtime_page():
+    return render_template('realtime_emotion.html')
+
+@app.route('/realtime_predict', methods=['POST'])
+def realtime_predict():
+    data = request.get_json()
+    text = data['text']
+    vec = vectorizer.transform([text])
+    sentiment = sentiment_model.predict(vec)[0]
+    emotion = emotion_model.predict(vec)[0]
+    return jsonify({'sentiment': sentiment, 'emotion': emotion})
+
 if __name__ == "__main__":
     app.run(debug=True)
