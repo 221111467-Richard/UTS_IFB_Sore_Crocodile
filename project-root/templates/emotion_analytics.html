@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block title %}Analisis Emosi CSV{% endblock %}
+{% block content %}
+<style>
+  
+  h2 {
+
+    font-weight: 600;
+  }
+  #emotionChart {
+    transition: 0.4s ease-in-out;
+  }
+  #saveChart {
+    float: right;
+    background-color: #2b6cb0;
+  }
+
+  .form-section input[type="submit"] {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #2b6cb0;
+    background: #2b6cb0;
+    color: #fff;
+    cursor: pointer;
+    transition: 0.2s;
+    margin-top:20px;
+  }
+
+  .form-section input[type="submit"]:hover {
+    background: #1a4d8f;
+  }
+</style>
