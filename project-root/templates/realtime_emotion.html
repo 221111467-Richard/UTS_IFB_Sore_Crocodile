@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% block title %}Analisis Real-Time Berdasarkan Emosi{% endblock %}
+{% block content %}
+<style>
+  .market-select {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 1000;
+    font-size: 14px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: #fff;
+  }
+
+  .content-wrapper {
+    position: relative;
+    padding-top: 56px;
+  }
+
+  .form-section textarea {
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .form-section input[type="submit"] {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #2b6cb0;
+    background: #2b6cb0;
+    color: #fff;
+    cursor: pointer;
+    transition: 0.2s;
+    margin-top:20px;
+  }
+
+  .form-section input[type="submit"]:hover {
+    background: #1a4d8f;
+  }
+
+  #result-box {
+    margin-top: 20px;
+    display: none;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background-color: #f8f8f8;
+  }
+</style>
+  <select
+    class="market-select"
+    aria-label="Pilih marketplace"
+    onchange="if(this.value) window.open(this.value, '_blank');"
+  >
+    <option value="">Yuk cari komentar untuk tes model kami...</option>
+    <option value="https://www.tokopedia.com">Tokopedia</option>
+    <option value="https://www.shopee.co.id">Shopee</option>
+    <option value="https://www.lazada.co.id">Lazada</option>
+    <option value="https://www.blibli.com">Blibli</option>
+  </select>
