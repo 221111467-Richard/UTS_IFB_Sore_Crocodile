@@ -59,3 +59,44 @@
     <option value="https://www.lazada.co.id">Lazada</option>
     <option value="https://www.blibli.com">Blibli</option>
   </select>
+
+  <div class="content-wrapper">
+
+
+  <div class="form-section">
+    <h2>Analisis Sentimen Real-Time Berdasarkan Emosi</h2>
+    <form id="realtimeForm">
+      <textarea id="textInput" class="form-control" rows="4" placeholder="Masukkan review di sini..."></textarea>
+      <input type="submit" value="Analisis">
+    </form>
+
+    <div id="result-box">
+      <p><b>Sentimen:</b> <span id="sentimentResult">-</span></p>
+      <p><b>Emosi:</b> <span id="emotionResult">-</span></p>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById("realtimeForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const text = document.getElementById("textInput").value.trim();
+  if (!text) return;
+
+  const resultBox = document.getElementById("result-box");
+  resultBox.style.display = "block";
+  document.getElementById("sentimentResult").innerText = "⏳ menganalisis...";
+  document.getElementById("emotionResult").innerText = "⏳ menganalisis...";
+
+  const res = await fetch("/realtime_predict", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ text })
+  });
+
+  const data = await res.json();
+  document.getElementById("sentimentResult").innerText = data.sentiment;
+  document.getElementById("emotionResult").innerText = data.emotion;
+});
+</script>
+{% endblock %}
