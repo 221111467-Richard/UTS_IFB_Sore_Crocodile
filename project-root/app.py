@@ -235,5 +235,48 @@ def realtime_predict():
     emotion = emotion_model.predict(vec)[0]
     return jsonify({'sentiment': sentiment, 'emotion': emotion})
 
+@app.route('/analyze_csv', methods=['GET', 'POST'])
+def analyze_csv():
+    results = None
+    if request.method == 'POST':
+        file = request.files['file']
+        df = pd.read_csv(file, quotechar='"', sep=',', on_bad_lines='skip')
+
+
+        base_cols = [
+            'customer review', 'review', 'reviews', 'comment', 'comments',
+            'text', 'content', 'feedback', 'message', 'messages', 'opinion',
+            'body', 'ulasan', 'deskripsi', 'isi', 'caption', 'post', 'tweet',
+            'status', 'description', 'response', 'remark', 'testimonial',
+            'statement', 'komentar', 'tanggapan', 'pendapat', 'evaluasi',
+            'keterangan', 'pesan', 'uraian', 'narasi', 'isi review',
+            'isi komentar', 'sentence', 'text tweet'
+        ]
+        possible_cols = [col for c in base_cols for col in [c, c.capitalize(), c.upper()]]
+
+        review_col = next(
+            (col for col in df.columns if col.strip().lower() in [p.lower() for p in possible_cols]),
+            None
+        )
+
+        if not review_col:
+            return render_template("emotion_csv.html", error=f"Kolom teks tidak ditemukan. Kolom: {list(df.columns)}")
+
+
+        df = df[df[review_col].astype(str).str.len() > 5].head(200)
+        df['cleaned'] = df[review_col].astype(str).apply(clean_text)
+
+
+        vec = vectorizer.transform(df['cleaned'])
+        df['Sentiment'] = sentiment_model.predict(vec)
+        df['Emotion'] = emotion_model.predict(vec)
+
+        results = [
+            {'review': r, 'sentiment': s, 'emotion': e}
+            for r, s, e in zip(df[review_col], df['Sentiment'], df['Emotion'])
+        ]
+
+    return render_template('emotion_csv.html', results=results)
+
 if __name__ == "__main__":
     app.run(debug=True)
