@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request,session
+from flask import Flask, render_template, request,session,jsonify
 import joblib
 import re
 import io, base64
@@ -28,6 +28,10 @@ sentiment_model = joblib.load(
 )
 vectorizer = joblib.load(
     os.path.join(BASE_DIR, "model", "vectorizer.pkl")
+)
+
+emotion_model = joblib.load(
+    os.path.join(BASE_DIR, "model", "emotion_svm.pkl")
 )
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
