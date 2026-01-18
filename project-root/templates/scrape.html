@@ -1,0 +1,281 @@
+{% extends "layout.html" %}
+{% block title %}Assisted Extraction{% endblock %}
+{% block content %}
+
+<style>
+
+     .market-select {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 1000;
+      font-size: 14px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #fff;
+    }
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    padding: 30px;
+}
+
+hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(to right, transparent,#0ef, transparent);
+    margin: 25px 0;
+}
+
+/* ===== Form ===== */
+form {
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+    width: 75%;
+}
+
+label {
+    font-weight: bold;
+    color: #000;
+}
+
+input[type="text"], textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+}
+
+button {
+    background-color:  #2b6cb0;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.reset-btn {
+    background-color: #444;
+    color: #fff;
+    margin-left: 10px;
+}
+
+/* ===== Toggle ===== */
+.mode-toggle {
+    margin: 15px 0;
+}
+
+.mode-toggle label {
+    margin-right: 20px;
+    font-weight: bold;
+}
+
+/* ===== Neon Table ===== */
+.neon-table {
+    width: 85%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+.neon-table th {
+    background-color: #0ef;
+    color: #ffffff;
+    padding: 10px;
+}
+
+.neon-table td {
+    padding: 10px;
+    color: #000000;
+    border-bottom: 1px solid rgba(0,255,255,.2);
+}
+
+.label-positive {
+    background-color: rgba(0, 255, 153, 0.2);
+    color: #00ff99;
+    border: 1px solid #00ff99;
+}
+
+.label-negative {
+    background-color: rgba(255, 77, 77, 0.2);
+    color: #ff4d4d;
+    border: 1px solid #ff4d4d;
+}
+
+/* Emotion (aman untuk kelas lain) */
+
+.label-anger {
+    background-color: rgba(255, 0, 0,0.2);
+    color: #ff5050;
+    border: 1px solid #ff5050;
+}
+
+.label-fear {
+    background-color: rgba(130, 208, 170,0.2);
+    color: #ff5050;
+    border: 1px solid #ff5050;
+}
+.label-happy {
+    background-color: rgba(252, 255, 56,0.2);
+    color: #ffff66;
+    border: 1px solid #ffff66;
+}
+
+
+
+.label-love {
+    background-color: rgba(255, 47, 241,0.2);
+    color: #6495ed;
+    border: 1px solid #6495ed;
+}
+
+.label-sadness {
+    background-color: rgba(37, 81, 200,0.2);
+    color: #ccc;
+    border: 1px solid #aaa;
+}
+
+/* ===== Image ===== */
+.neon-img {
+    max-width: 200px;
+    box-shadow: 0 0 12px rgba(0,255,255,.6);
+}
+</style>
+
+  <select
+    class="market-select"
+    aria-label="Pilih marketplace"
+    onchange="if(this.value) window.open(this.value, '_blank');"
+  >
+    <option value="">Yuk cari link produk untuk tes model kami...</option>
+    <option value="https://www.tokopedia.com">Tokopedia</option>
+
+  </select>
+
+<h2>Assisted Extraction</h2>
+
+<form method="post">
+    <label>URL Produk</label>
+    <input type="text" name="url" placeholder="https://www.tokopedia.com/...">
+
+    <br><br>
+
+    <label>Komentar (1 baris = 1 komentar)</label>
+    <textarea name="comments" rows="8"></textarea>
+
+    <!-- TOGGLE MODE -->
+    <div class="mode-toggle">
+        <label>
+            <input type="radio" name="mode" value="sentiment"
+                {% if mode != 'emotion' %}checked{% endif %}>
+            Sentiment
+        </label>
+
+        <label>
+            <input type="radio" name="mode" value="emotion"
+                {% if mode == 'emotion' %}checked{% endif %}>
+            Emotion
+        </label>
+    </div>
+
+    <button type="submit">Analisis</button>
+    <button type="button" class="reset-btn" onclick="resetPage()">Reset</button>
+</form>
+
+{% if error %}
+<p style="color:red">{{ error }}</p>
+{% endif %}
+
+{% if metadata %}
+<hr>
+<h3>Metadata Produk</h3>
+
+<table class="neon-table">
+<tr><th>Field</th><th>Value</th></tr>
+<tr><td>Judul</td><td>{{ metadata.title }}</td></tr>
+<tr>
+    <td>Gambar</td>
+    <td>
+        {% if metadata.image %}
+        <img src="{{ metadata.image }}" class="neon-img">
+        {% else %}
+        Tidak tersedia
+        {% endif %}
+    </td>
+</tr>
+<tr><td>Deskripsi</td><td>{{ metadata.description }}</td></tr>
+</table>
+{% endif %}
+
+{% if stats and stats.mode == "sentiment" %}
+<hr>
+<h3>Statistik Sentimen</h3>
+
+<table class="neon-table">
+<tr><th>Label</th><th>Jumlah</th><th>%</th></tr>
+<tr>
+    <td>Positive</td>
+    <td>{{ stats.Positive }}</td>
+    <td>{{ stats.Positive_pct }}%</td>
+</tr>
+<tr>
+    <td>Negative</td>
+    <td>{{ stats.Negative }}</td>
+    <td>{{ stats.Negative_pct }}%</td>
+</tr>
+</table>
+{% endif %}
+
+{% if stats and stats.mode == "emotion" %}
+<hr>
+<h3>Distribusi Emosi</h3>
+
+<table class="neon-table">
+<tr><th>Emosi</th><th>Jumlah</th></tr>
+{% for emo, count in stats.distribution.items() %}
+<tr>
+    <td>{{ emo }}</td>
+    <td>{{ count }}</td>
+</tr>
+{% endfor %}
+</table>
+{% endif %}
+
+{% if results %}
+<h3>Hasil Klasifikasi</h3>
+
+<table class="neon-table">
+    <thead>
+        <tr>
+            <th>No</th>
+            <th>Label</th>
+            <th>Komentar</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for r in results %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>
+                <span class="label label-{{ r.label|lower }}">
+                    {{ r.label }}
+                </span>
+            </td>
+            <td>{{ r.comment }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% endif %}
+
+<script>
+function resetPage() {
+    window.location.href = window.location.pathname;
+}
+</script>
+
+{% endblock %}
