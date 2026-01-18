@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: uas-sentimen-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: uas-sentimen
+  template:
+    metadata:
+      labels:
+        app: uas-sentimen
+    spec:
+      containers:
+        - name: uas-sentimen
+          image: 221111467richard/uas-devops-sentimen:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          env:
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
