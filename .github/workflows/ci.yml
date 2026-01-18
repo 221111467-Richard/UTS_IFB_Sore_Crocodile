@@ -20,7 +20,7 @@ jobs:
 
     - name: Build Docker Image
       run: |
-        docker build -t 221111467richard/uas-devops-sentimen:latest .
+        docker build -t 221111467richard/uas-devops-sentimen:latest -f project-root/Dockerfile project-root/ .
 
     - name: Push Docker Image
       run: |
