@@ -76,6 +76,29 @@ def clean_text(text):
     return " ".join(tokens)
 
 
+def explain_prediction(text, model, vectorizer, top_n=5):
+    """
+    Menghasilkan kata-kata paling berpengaruh pada prediksi SVM
+    """
+
+    cleaned = clean_text(text)
+    vec = vectorizer.transform([cleaned])
+    feature_names = vectorizer.get_feature_names_out()
+    coef = model.coef_[0]  
+    contributions = vec.toarray()[0] * coef
+    non_zero_idx = contributions.nonzero()[0]
+    word_scores = [
+        (feature_names[i], contributions[i])
+        for i in non_zero_idx
+    ]
+    word_scores = sorted(
+        word_scores,
+        key=lambda x: abs(x[1]),
+        reverse=True
+    )
+
+    return word_scores[:top_n]
+
 last_df = None
 wordcloud_img = None
 
@@ -496,6 +519,52 @@ def assisted_extraction():
         stats=stats,
         error=error,
         mode=mode
+    )
+
+@app.route('/explain', methods=['GET', 'POST'])
+def explain_page():
+    results = []
+    error = None
+
+    if request.method == 'POST':
+        raw_comments = request.form.get('comments')
+
+        if not raw_comments:
+            error = "Masukkan komentar terlebih dahulu."
+        else:
+            comments = normalize_comments(raw_comments)
+
+            if not comments:
+                error = "Komentar terlalu pendek atau tidak valid."
+            else:
+                for c in comments:
+                    cleaned = clean_text(c)
+                    vec = vectorizer.transform([cleaned])
+                    pred = sentiment_model.predict(vec)[0]
+
+                    raw_explanation = explain_prediction(
+                        c,
+                        sentiment_model,
+                        vectorizer,
+                        top_n=5
+                    )
+
+                    # 🔴 INI KUNCI PERBAIKAN
+                    explanation = [
+                        {"word": w, "score": s}
+                        for w, s in raw_explanation
+                    ]
+
+                    results.append({
+                        "comment": c,
+                        "label": pred,
+                        "explanation": explanation
+                    })
+
+    return render_template(
+        "explain.html",
+        results=results,
+        error=error
     )
 
 if __name__ == "__main__":
