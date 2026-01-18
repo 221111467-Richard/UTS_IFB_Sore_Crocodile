@@ -18,6 +18,13 @@ import redis
 import json
 
 
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse
+import json
+from collections import Counter
+
+
 app = Flask(__name__)
 app.secret_key = "CHANGE_THIS_SECRET_KEY"
 
@@ -323,6 +330,173 @@ def emotion_analytics():
         emotions = counts.to_dict()
 
     return render_template('emotion_analytics.html', emotions=emotions)
+
+
+def is_valid_url(url):
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except:
+        return False
+
+
+def detect_platform(url):
+    url = url.lower()
+    if "tokopedia.com" in url:
+        return "Tokopedia"
+    elif "shopee" in url:
+        return "Shopee"
+    elif "lazada" in url:
+        return "Lazada"
+    return "Unknown"
+
+def get_product_metadata(url):
+    try:
+        r = requests.get(
+            url,
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=10
+        )
+        html = r.text
+        soup = BeautifulSoup(html, "html.parser")
+
+        title = soup.title.string.strip() if soup.title else "Unknown Product"
+
+        description = "No description"
+        desc_meta = soup.find("meta", property="og:description")
+        if desc_meta:
+            description = desc_meta.get("content")
+
+        image = None
+        img_meta = soup.find("meta", property="og:image")
+        if img_meta:
+            image = img_meta.get("content")
+
+        platform = "Tokopedia" if "tokopedia" in url.lower() else "Unknown"
+
+     
+        match = re.search(r'__NEXT_DATA__\s*=\s*({.*?})\s*</script>', html, re.DOTALL)
+
+        if match:
+            data = json.loads(match.group(1))
+
+            try:
+                product = (
+                    data["props"]["pageProps"]["dehydratedState"]
+                    ["queries"][0]["state"]["data"]
+                )
+
+             
+
+            except Exception:
+                pass  
+
+        return {
+            "title": title,
+            "image": image,
+            "description": description,
+            "platform": platform,
+            "url": url
+        }
+
+    except Exception:
+        return {
+            "title": "Gagal mengambil metadata",
+            "image": None,
+            "description": "-",
+            "url": url
+        }
+
+def normalize_comments(raw_text):
+    comments = []
+    for line in raw_text.splitlines():
+        line = line.strip()
+        if len(line) < 6:
+            continue
+        if line.isdigit():
+            continue
+        comments.append(line)
+    return comments
+
+
+@app.route('/scrape', methods=['GET', 'POST'])
+def assisted_extraction():
+
+    metadata = None
+    results = None
+    stats = None
+    error = None
+    mode = "sentiment"   # ✅ DEFAULT WAJIB
+
+    if request.method == 'POST':
+        url = request.form.get('url')
+        raw_comments = request.form.get('comments')
+        mode = request.form.get("mode", "sentiment")
+
+        # ---- Ambil metadata produk
+        if url:
+            if is_valid_url(url):
+                metadata = get_product_metadata(url)
+            else:
+                error = "URL tidak valid."
+
+        # ---- Proses komentar
+        if raw_comments:
+            comments = normalize_comments(raw_comments)
+
+            if not comments:
+                error = "Komentar tidak ditemukan atau terlalu pendek."
+            else:
+                cleaned = [clean_text(c) for c in comments]
+                vec = vectorizer.transform(cleaned)
+
+                # ===== SENTIMENT MODE =====
+                if mode == "sentiment":
+                    predictions = sentiment_model.predict(vec)
+
+                    results = [
+                        {"comment": c, "label": p}
+                        for c, p in zip(comments, predictions)
+                    ]
+
+                    total = len(predictions)
+                    pos = sum(p == "Positive" for p in predictions)
+                    neg = sum(p == "Negative" for p in predictions)
+
+                    stats = {
+                        "mode": "sentiment",
+                        "total": total,
+                        "Positive": pos,
+                        "Negative": neg,
+                        "Positive_pct": round((pos / total) * 100, 2),
+                        "Negative_pct": round((neg / total) * 100, 2)
+                    }
+
+                # ===== EMOTION MODE =====
+                elif mode == "emotion":
+                    predictions = emotion_model.predict(vec)
+
+                    results = [
+                        {"comment": c, "label": p}
+                        for c, p in zip(comments, predictions)
+                    ]
+
+                    counter = Counter(predictions)
+
+                    stats = {
+                        "mode": "emotion",
+                        "total": len(predictions),
+                        "distribution": dict(counter)
+                    }
+
+    return render_template(
+        "scrape.html",
+        metadata=metadata,
+        results=results,
+        stats=stats,
+        error=error,
+        mode=mode
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)
