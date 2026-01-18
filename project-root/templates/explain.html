@@ -1,0 +1,208 @@
+{% extends "layout.html" %}
+{% block title %}Explainable AI – Sentiment Decision{% endblock %}
+{% block content %}
+
+<style>
+.explain-container {
+    width: 90%;
+    margin: auto;
+}
+
+.explain-card {
+    background: #0e1325;
+    border: 1px solid #0ef;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 18px rgba(0,255,255,0.25);
+}
+
+.explain-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.label {
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.label-positive {
+    background: #00ff99;
+    color: #000;
+}
+
+.label-negative {
+    background: #ff4d4d;
+    color: #000;
+}
+
+.explain-text {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #fff;
+}
+
+.explain-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+
+.explain-table th {
+    background: #0ef;
+    color: #ffffff;
+    padding: 8px;
+    font-size: 13px;
+}
+
+.explain-table td {
+    padding: 8px;
+    border-bottom: 1px solid rgba(0,255,255,0.2);
+    font-size: 13px;
+}
+
+.score-pos {
+    color: #00ff99;
+    font-weight: bold;
+}
+
+.score-neg {
+    color: #ff4d4d;
+    font-weight: bold;
+}
+
+.note {
+    margin-top: 30px;
+    font-size: 13px;
+    color: #000;
+    opacity: 0.85;
+}
+</style>
+
+<div class="explain-container">
+
+<h2>Explainable AI – Alasan Keputusan Model</h2>
+<p style="color:#000">
+Halaman ini menampilkan kata-kata yang paling berpengaruh dalam keputusan model
+<b>Linear SVM</b> berdasarkan bobot <b>TF-IDF</b> dan koefisien hyperplane.
+</p>
+
+<hr>
+
+{% if error %}
+    <p style="color:#ff8080">{{ error }}</p>
+{% endif %}
+
+<form method="POST" style="margin-bottom:25px">
+    <label style="color:#000; font-weight:bold">
+        Masukkan komentar untuk dianalisis:
+    </label>
+
+    <textarea name="comments"
+        rows="5"
+        style="
+            width:100%;
+            margin-top:10px;
+            background:#d1d1d1;
+            border:1px solid #0ef;
+            color:#000;
+            padding:10px;
+            border-radius:8px;
+            font-size:14px;
+        "
+        placeholder="Contoh: Produk ini sangat bagus dan pengirimannya cepat">
+    </textarea>
+
+    <button type="submit"
+        style="
+            margin-top:12px;
+            background: #2b6cb0;
+            color:#fff;
+            border:none;
+            padding:8px 16px;
+            border-radius:8px;
+            font-weight:bold;
+            cursor:pointer;
+        ">
+        Jelaskan Keputusan Model
+    </button>
+</form>
+
+
+{% if results %}
+    {% for r in results %}
+    <div class="explain-card">
+
+        <div class="explain-header">
+            <strong style="color:#fff">Komentar</strong>
+            <span class="label
+                {% if r.label == 'Positive' %}
+                    label-positive
+                {% else %}
+                    label-negative
+                {% endif %}
+            ">
+                {{ r.label }}
+            </span>
+        </div>
+
+        <div class="explain-text">
+            “{{ r.comment }}”
+        </div>
+
+        {% if r.explanation %}
+        <table class="explain-table">
+            <thead>
+                <tr>
+                    <th>Kata</th>
+                    <th>Kontribusi</th>
+                    <th>Arah</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for e in r.explanation %}
+                <tr>
+                    <td style="color:white">{{ e.word }}</td>
+                    <td class="{% if e.score > 0 %}score-pos{% else %}score-neg{% endif %}">
+                        {{ "%.4f"|format(e.score) }}
+                    </td>
+                    <td style="color:white">
+                        {% if e.score > 0 %}
+                            Mendukung Positif
+                        {% else %}
+                            Mendukung Negatif
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p style="color:#000; font-size:13px; margin-top:10px">
+                Tidak ada fitur yang berkontribusi signifikan untuk komentar ini.
+            </p>
+        {% endif %}
+
+    </div>
+    {% endfor %}
+{% else %}
+    <p style="color:#000">
+        Belum ada hasil penjelasan yang ditampilkan.
+    </p>
+{% endif %}
+
+<div class="note">
+<b>Catatan:</b><br>
+Skor kontribusi dihitung dari perkalian nilai <b>TF-IDF</b> dan
+<b>koefisien Linear SVM</b>.
+Nilai positif mendorong kelas positif, nilai negatif mendorong kelas negatif.
+Pendekatan ini bersifat deterministik dan tidak menggunakan sampling
+atau aproksimasi (bukan LIME/SHAP).
+</div>
+
+</div>
+
+{% endblock %}
