@@ -34,13 +34,15 @@ emotion_model = joblib.load(
     os.path.join(BASE_DIR, "model", "emotion_svm.pkl")
 )
 
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_HOST = os.getenv("REDIS_HOST", "redis")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 
 redis_client = redis.Redis(
     host=REDIS_HOST,
     port=REDIS_PORT,
-    decode_responses=True
+    decode_responses=True,
+    socket_connect_timeout=3,
+    socket_timeout=3
 )
 
 stop_factory = StopWordRemoverFactory()
